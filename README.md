@@ -1,2 +1,4 @@
-# Daily_routine_bot
-Bot
+# TaskManager
+____
+
+## Версия 1.0
