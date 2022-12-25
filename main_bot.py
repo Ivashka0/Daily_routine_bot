@@ -5,7 +5,7 @@ from telebot import types
 import datetime
 
 config = {
-    "name": "DailyRoutine",
+    "name": "TaskManager",
     "token": "5888172256:AAEVv_5NIBoO_q2YzOwyXCubtHOM21Zkyag"
 }
 
@@ -162,7 +162,16 @@ def add_task(message):
     with open("tasks.json", "r", encoding="utf8") as json_file:
         dicti1 = json.load(json_file)
     data = message.text.split('/')
-    if len(data) == 2:
+    try:
+        date = datetime.datetime.strptime(data[1], "%d-%m-%Y")
+        datetime.datetime.strftime(date, "%d-%m-%Y")
+        access = True
+    except ValueError as warning:
+        print(warning)
+        fedo.send_message(message.chat.id, str(warning))
+        access = False
+    print(access)
+    if len(data) == 2 and access:
         if not message.from_user.username in dicti1:
             dicti1[message.from_user.username] = {}
             print(dicti1)
@@ -194,36 +203,44 @@ def sorting_by_date(message):
     with open("tasks.json", "r", encoding="utf8") as json_file:
         dicti1 = json.load(json_file)
 
-    dates = [datetime.datetime.strptime(dicti1[message.from_user.username][str(i + 1)]['date'], "%d-%m-%Y") for i in
-             range(len(dicti1[message.from_user.username]))]
+    dates = [datetime.datetime.strptime(
+        dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[i]]['date'], "%d-%m-%Y") for
+        i in
+        range(len(dicti1[message.from_user.username]))]
     dates.sort()
     sorteddates = [datetime.datetime.strftime(ts, "%d-%m-%Y") for ts in dates]
-
+    dict_data = {message.from_user.username: {}}
     for i in sorteddates:
         for element in range(len(dicti1[message.from_user.username])):
             if dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['date'] == i:
-                if dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['completed']:
-                    inlines = telebot.types.InlineKeyboardMarkup()
-                    inlines.add(telebot.types.InlineKeyboardButton(text=f"Удалить задание",
-                                                                   callback_data=f"{list(dicti1[message.from_user.username].keys())[element]} {message.from_user.username} d"))
-                    fedo.send_message(message.chat.id,
-                                      f"✅{dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['headline']}✅\n "
-                                      f"Дата создания: "
-                                      f"{dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['date']}",
-                                      reply_markup=inlines)
-                elif not dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['completed']:
-                    inlines = telebot.types.InlineKeyboardMarkup()
-                    inlines.add(telebot.types.InlineKeyboardButton(text=f"Выполнить задание",
-                                                                   callback_data=f"{list(dicti1[message.from_user.username].keys())[element]} {message.from_user.username} c"))
-                    inlines.add(telebot.types.InlineKeyboardButton(text=f"Удалить задание",
-                                                                   callback_data=f"{list(dicti1[message.from_user.username].keys())[element]} {message.from_user.username} d"))
-                    fedo.send_message(message.chat.id,
-                                      f"{dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['headline']}\n"
-                                      f"Дата создания: "
-                                      f"{dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]['date']}",
-                                      reply_markup=inlines)
-                else:
-                    fedo.send_message(message.chat.id, f"Нету заданий ")
+                dict_data[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]] = \
+                    dicti1[message.from_user.username][list(dicti1[message.from_user.username].keys())[element]]
+                print(dict_data)
+    for element in range(len(dict_data[message.from_user.username])):
+        if dict_data[message.from_user.username][list(dict_data[message.from_user.username].keys())[element]]['completed']:
+            inlines = telebot.types.InlineKeyboardMarkup()
+            inlines.add(telebot.types.InlineKeyboardButton(text=f"Удалить задание",
+                                                           callback_data=f"{list(dict_data[message.from_user.username].keys())[element]} "
+                                                                         f"{message.from_user.username} d"))
+            fedo.send_message(message.chat.id,
+                              f"✅{dict_data[message.from_user.username][list(dict_data[message.from_user.username].keys())[element]]['headline']}✅\n "
+                              f"Дата создания: "
+                              f"{dict_data[message.from_user.username][list(dict_data[message.from_user.username].keys())[element]]['date']}",
+                              reply_markup=inlines)
+        elif not dict_data[message.from_user.username][list(dict_data[message.from_user.username].keys())[element]][
+            'completed']:
+            inlines = telebot.types.InlineKeyboardMarkup()
+            inlines.add(telebot.types.InlineKeyboardButton(text=f"Выполнить задание",
+                                                           callback_data=f"{list(dict_data[message.from_user.username].keys())[element]} "
+                                                                         f"{message.from_user.username} c"))
+            inlines.add(telebot.types.InlineKeyboardButton(text=f"Удалить задание",
+                                                           callback_data=f"{list(dict_data[message.from_user.username].keys())[element]} "
+                                                                         f"{message.from_user.username} d"))
+            fedo.send_message(message.chat.id,
+                              f"{dict_data[message.from_user.username][list(dict_data[message.from_user.username].keys())[element]]['headline']}\n"
+                              f"Дата создания: "
+                              f"{dict_data[message.from_user.username][list(dict_data[message.from_user.username].keys())[element]]['date']}",
+                              reply_markup=inlines)
 
 
 fedo.polling(none_stop=True, interval=0)
